@@ -12,11 +12,22 @@ type Controller struct {
 }
 
 type IController interface {
-	GetTest(c *gin.Context)
+	GetCountDB(c *gin.Context)
+	GetCount(c *gin.Context)
 }
 
-func (s Controller) GetTest(c *gin.Context) {
-	data := c.Query("message")
-	sk := s.Service.FileOperation.FileServiceOperation(data)
+func (s Controller) GetCountDB(c *gin.Context) {
+	buf := make([]byte, 1024)
+	num, _ := c.Request.Body.Read(buf)
+	reqBody := string(buf[0:num])
+	sk := s.Service.FileOperation.ServiceOperation(reqBody)
+	c.JSON(http.StatusOK, sk)
+}
+
+func (s Controller) GetCount(c *gin.Context) {
+	buf := make([]byte, 1024)
+	num, _ := c.Request.Body.Read(buf)
+	reqBody := string(buf[0:num])
+	sk := s.Service.FileOperation.StringServiceOperations(reqBody)
 	c.JSON(http.StatusOK, sk)
 }

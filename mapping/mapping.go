@@ -20,7 +20,9 @@ func UrlMapping(router *gin.Engine) *gin.Engine {
 		return db
 	}())
 
-	router.GET("/wordcounter", controller.Controller.GetTest)
+	router.POST("/wordcounterdb", controller.Controller.GetCountDB)
+
+	router.POST("/wordcounter", controller.Controller.GetCount)
 
 	return router
 }

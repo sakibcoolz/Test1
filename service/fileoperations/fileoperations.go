@@ -13,18 +13,32 @@ type FileService struct {
 }
 
 type IFileService interface {
-	FileServiceOperation(test string) (wordcount []model.SelectData)
+	ServiceOperation(test string) map[string]int
+	StringServiceOperations(test string) map[string]int
 }
 
-func (F FileService) FileServiceOperation(test string) (wordcount []model.SelectData) {
-	// top := 10
-
-	rawArray := strings.Fields(test)
+// used db to sort
+func (F FileService) ServiceOperation(test string) map[string]int {
+	var wordcount []model.SelectData
 
 	sql := fmt.Sprintf("select * from ( \n")
 	union := fmt.Sprintf("\nunion\n")
-	sqlend := "\n) a order by col2 desc limit 10"
+	sqlend := "\n) a order by col2 desc"
 	var Select []string
+
+	for word, count := range stringToMap(test) {
+		Select = append(Select, "select '"+word+"' col1, "+strconv.Itoa(count)+" col2 ")
+	}
+
+	finalsql := sql + strings.Join(Select, union) + sqlend
+
+	wordcount = F.Filestore.StringOperations(finalsql)
+
+	return StructMap(wordcount[:10])
+}
+
+func stringToMap(test string) map[string]int {
+	rawArray := strings.Fields(test)
 
 	wc := make(map[string]int)
 	for _, word := range rawArray {
@@ -36,13 +50,32 @@ func (F FileService) FileServiceOperation(test string) (wordcount []model.Select
 		}
 	}
 
-	for word, count := range wc {
-		Select = append(Select, "select '"+word+"' col1, "+strconv.Itoa(count)+" col2 ")
+	return wc
+}
+
+func StructMap(wordcount []model.SelectData) map[string]int {
+	data := make(map[string]int)
+	for _, v := range wordcount {
+		data[v.Col1] = v.Col2
+	}
+	return data
+}
+
+// sort using go code not used db
+func (F FileService) StringServiceOperations(test string) map[string]int {
+	var wordcount []model.SelectData
+
+	for word, count := range stringToMap(test) {
+		wordcount = append(wordcount, model.SelectData{Col1: word, Col2: count})
 	}
 
-	finalsql := sql + strings.Join(Select, union) + sqlend
+	for i := 0; i < len(wordcount); i++ {
+		for j := 0; j < len(wordcount); j++ {
+			if wordcount[i].Col2 > wordcount[j].Col2 {
+				wordcount[i], wordcount[j] = wordcount[j], wordcount[i]
+			}
+		}
+	}
 
-	wordcount = F.Filestore.StringOperations(finalsql)
-
-	return wordcount[:10]
+	return StructMap(wordcount[:10])
 }
